@@ -25,3 +25,5 @@ _testmain.go
 *.ags
 *.zip
 sysdagent
+config.yaml
+filename.txt
