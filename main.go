@@ -2,9 +2,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
+	"net/http"
 	"net/smtp"
 	"os"
 	"os/signal"
@@ -14,7 +18,6 @@ import (
 
 	"github.com/godbus/dbus"
 	"github.com/spf13/viper"
-
 	"github.com/srajelli/ses-go"
 )
 
@@ -34,6 +37,10 @@ type serviceStatus struct {
 	ActiveExitTimestamp    uint64
 	InactiveEnterTimestamp uint64
 	InactiveExitTimestamp  uint64
+}
+
+type SlackRequestBody struct {
+	Text string `json:"text"`
 }
 
 func formatTime(us uint64) string {
@@ -259,7 +266,7 @@ func watchServices(chanDone chan struct{}, units ...string) {
 			ioutil.WriteFile("filename.txt", []byte(status.ActiveState), 0644)
 			if status.ActiveState != string(contents) {
 				fmt.Println(status.String())
-				if viper.GetBool("app.smtp.ses.enabled") == true {
+				if viper.GetBool("app.smtp.enabled") == true && viper.GetBool("app.smtp.ses.enabled") == true {
 					//sesAws(status.String())
 					to := viper.Get("app.smtp.recipient").(string)
 					dest := strings.Split(to, ", ")
@@ -268,8 +275,16 @@ func watchServices(chanDone chan struct{}, units ...string) {
 						start += i
 						sesAws(dest[start], status.String())
 					}
-				} else {
+				}
+				if viper.GetBool("app.smtp.enabled") == true {
 					sendEmail(status.String())
+				}
+				if viper.GetBool("app.slack.enabled") == true {
+					webhook := viper.Get("app.slack.webhook_uri").(string)
+					err := slackNotif(webhook, status.String())
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
 			}
 		case <-chanDone:
@@ -321,6 +336,30 @@ func sesAws(to string, body string) {
 	resp := ses.SendEmail(emailData)
 
 	fmt.Println(resp)
+}
+
+func slackNotif(webhookUrl string, msg string) error {
+
+	slackBody, _ := json.Marshal(SlackRequestBody{Text: msg})
+	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(slackBody))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	if buf.String() != "ok" {
+		return errors.New("Non-ok response returned from Slack")
+	}
+	return nil
 }
 
 func main() {

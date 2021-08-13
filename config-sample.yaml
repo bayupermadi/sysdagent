@@ -3,6 +3,7 @@
       name: Monitoring Service
       monitored-service: "<services1>, <services2>"
       smtp:
+        enabled: true
         user: "<sender>@<domain>"
         password: "<password>"
         port: "<port>"
@@ -14,4 +15,7 @@
           aws-key-id: "<your aws key ID>"
           aws-secret-key: "your secret key"
           aws-region: "<your region>"
+      slack:
+        enabled: true
+        webhook_uri: "<your slack webhook uri>"
 ---
