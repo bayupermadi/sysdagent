@@ -8,6 +8,8 @@ This tool used to get the status changes of the monitored service. Once changes 
 *sysdagent* would find the PID of monitored process that run. It monitor the changes of signal from monitored process. The signal that it monitor is SIGINT, SIGKILL, SIGTERM, SIGSTOP. 
 If one of them catched by *sysdagent*, it would sent the status to receiver target which is defined in configuration file. 
 
+![Image of How to work](https://github.com/bayupermadi/sysdagent/blob/master/img/sysdagent_process.jpg)
+
 ## Running as backround process
 *sysdagent* can be run in background process with register it as one of systemd unit. Once its run, it easier for you to fine tune the configuration and start/stop/restart this application
 
