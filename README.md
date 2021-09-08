@@ -1,5 +1,5 @@
 # sysdagent
-Simple agent tool to monitor the systemd unit status changes
+Simple agent tool to monitor the systemd unit or process status changes
 
 ## Introduction
 This tool used to get the status changes of the monitored service. Once changes detected it would sent alert to the recipient. Currently it support email and slack messenger to get the alert
