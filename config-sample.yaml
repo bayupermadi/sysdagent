@@ -17,5 +17,8 @@
           aws-region: "<your region>"
       slack:
         enabled: true
-        webhook_uri: "<your slack webhook uri>"
+        webhook_uri: "<your slack webhook uri>" 
+      telegram:
+        enabled: true
+        token: "<your telegram token>" 
 ---

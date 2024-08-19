@@ -19,6 +19,8 @@ import (
 	"github.com/godbus/dbus"
 	"github.com/spf13/viper"
 	"github.com/srajelli/ses-go"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const (
@@ -286,6 +288,9 @@ func watchServices(chanDone chan struct{}, units ...string) {
 						log.Fatal(err)
 					}
 				}
+				if viper.GetBool("app.telegram.enabled") == true {
+					telegramNotif(status.String())
+				}
 			}
 		case <-chanDone:
 			return
@@ -362,13 +367,41 @@ func slackNotif(webhookUrl string, msg string) error {
 	return nil
 }
 
+func telegramNotif(msg string) error {
+
+	botToken := viper.Get("app.telegram.token").(string)
+
+	bot, err := tgbotapi.NewBotAPI(botToken)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bot.Debug = true
+
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates := bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg)
+		msg.ReplyToMessageID = update.Message.MessageID
+
+		bot.Send(msg)
+	}
+	return nil
+}
+
 func main() {
 	done := make(chan struct{})
 	defer close(done)
 
 	// config
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	viper.SetConfigName("config") // name of config file (without extension)
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("./")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %s", err))
